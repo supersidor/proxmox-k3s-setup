@@ -1,7 +1,5 @@
 provider "proxmox" {
   pm_api_url  = var.api_url
-  pm_user     = var.user
-  pm_password = var.passwd
   # Leave to "true" for self-signed certificates
   pm_tls_insecure = "true"
   pm_debug        = true
@@ -59,6 +57,7 @@ resource "proxmox_vm_qemu" "cloudinit-nodes" {
     }
   }
   network {
+    id      = 0
     model   = "virtio"
     bridge  = local.network.bridge
     tag     = local.network.vlan
