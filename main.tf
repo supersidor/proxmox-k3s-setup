@@ -1,9 +1,9 @@
 provider "proxmox" {
   pm_api_url  = var.api_url
-  # Leave to "true" for self-signed certificates
   pm_tls_insecure = "true"
   pm_debug        = true
   pm_timeout      = 300
+  pm_minimum_permission_check = false
 }
 
 locals {
@@ -30,9 +30,9 @@ resource "proxmox_vm_qemu" "cloudinit-nodes" {
   nameserver = local.network.dns
   ipconfig0  = "ip=dhcp"
   skip_ipv6  = true
-  ciuser     = "ansible"
-  cipassword = var.ansible_password
-  sshkeys    = var.ansible_public_ssh_key
+  ciuser     = "test"
+  cipassword = "test"
+ # sshkeys    = var.ansible_public_ssh_key
 
   cores    = each.value.cores
   memory   = each.value.ram
@@ -57,11 +57,11 @@ resource "proxmox_vm_qemu" "cloudinit-nodes" {
     }
   }
   network {
-    id      = 0
-    model   = "virtio"
-    bridge  = local.network.bridge
-    tag     = local.network.vlan
-    macaddr = each.value.macaddr
+    id       = 0
+    model    = "virtio"
+    bridge   = local.network.bridge
+    tag      = local.network.vlan
+    macaddr  = each.value.macaddr
   }
 }
 
