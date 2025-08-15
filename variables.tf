@@ -13,13 +13,13 @@ variable "token" {
 
 variable "target_host" {
   description = "Hostname to deploy to"
-  default     = "dantooine"
+  default     = "home1"
   type        = string
 }
 
 variable "storage_name" {
   description = "Storage name on Proxmox server"
-  default     = "vm-data"
+  default     = "local-lvm"
   type        = string
 }
 
