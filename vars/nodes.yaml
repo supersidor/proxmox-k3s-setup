@@ -43,8 +43,8 @@ nodes:
     vmid: 212
     os: ubuntu-noble-template
     boot: started
-  worker0:
-    name: k3s-worker-0
+  worker1:
+    name: k3s-worker-1
     type: worker
     ip: 192.168.50.153
     macaddr: 7A:00:00:00:01:10
@@ -54,8 +54,8 @@ nodes:
     vmid: 220
     os: ubuntu-noble-template
     boot: started
-  worker1:
-    name: k3s-worker-1
+  worker2:
+    name: k3s-worker-2
     type: worker
     ip: 192.168.50.154
     macaddr: 7A:00:00:00:01:11
@@ -65,8 +65,8 @@ nodes:
     vmid: 221
     os: ubuntu-noble-template
     boot: started
-  worker2:
-    name: k3s-worker-2
+  worker3:
+    name: k3s-worker-3
     type: worker
     ip: 192.168.50.155
     macaddr: 7A:00:00:00:01:12
@@ -76,8 +76,8 @@ nodes:
     vmid: 222
     os: ubuntu-noble-template
     boot: started
-  worker3:
-    name: k3s-worker-3
+  worker4:
+    name: k3s-worker-4
     type: worker
     ip: 192.168.50.156
     macaddr: 7A:00:00:00:01:13
@@ -87,8 +87,8 @@ nodes:
     vmid: 223
     os: ubuntu-noble-template
     boot: started
-  worker4:
-    name: k3s-worker-4
+  worker5:
+    name: k3s-worker-5
     type: worker
     ip: 192.168.50.157
     macaddr: 7A:00:00:00:01:14
@@ -96,16 +96,5 @@ nodes:
     ram: 8192
     disksize: 40G
     vmid: 224
-    os: ubuntu-noble-template
-    boot: started
-  worker5:
-    name: k3s-worker-5
-    type: worker
-    ip: 192.168.50.158
-    macaddr: 7A:00:00:00:01:15
-    cores: 2
-    ram: 8192
-    disksize: 40G
-    vmid: 225
     os: ubuntu-noble-template
     boot: started
