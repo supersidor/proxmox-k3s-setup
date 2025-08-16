@@ -1,71 +1,4 @@
-######################
-# Set up mysqsl server
-######################
-- name: Setup mysql
-  hosts: database
-  become: true
-  become_method: sudo
-  gather_facts: true
-  vars_files:
-    - vars/nodes.yaml
-    - vars/db.yaml
-  tags: [mysql]
-  tasks:
-    - name: Set hostname
-      hostname:
-        name: "{{ new_hostname }}"
 
-    - name: Install ansible python3 mysql dependency
-      apt:
-        name: python3-mysqldb
-        state: latest
-        update_cache: true
-
-    - name: Install mysql-server
-      apt:
-        name: mysql-server
-        state: latest
-
-    - name: Enable remote login to mysql
-      lineinfile:
-        path: /etc/mysql/mysql.conf.d/mysqld.cnf
-        regexp: "^bind-address"
-        line: "bind-address = 0.0.0.0"
-        backup: yes
-      notify:
-        - Restart mysql
-
-    - name: Copy my.cnf
-      copy:
-        src: files/my.cnf
-        dest: /etc/my.cnf
-        mode: 0644
-
-    - name: Start mysql
-      ansible.builtin.systemd:
-        name: mysql
-        state: started
-        enabled: yes
-
-    - name: Create K3s database
-      community.mysql.mysql_db:
-        name: "{{ dbname }}"
-        state: present
-        collation: latin1_swedish_ci
-
-    - name: Create remote users
-      community.mysql.mysql_user:
-        name: "{{ user }}"
-        password: "{{ pwd }}"
-        host: "%"
-        priv: "*.*:ALL"
-        state: present
-
-  handlers:
-    - name: Restart mysql
-      service:
-        name: mysql
-        state: restarted
 #####################
 # Configuring HA Poxy
 #####################
@@ -109,9 +42,9 @@
         name: nginx
         state: restarted
 
-########################################
+#######################################
 # Configuring primary control plane node
-########################################
+#######################################
 - name: Setup Primary K3S Control Plane node
   hosts: primary
   become: true
@@ -126,7 +59,7 @@
     # Try setting up some additional stuff, just for fun
     # INSTALL_K3S_EXEC="--flannel-backend=none --disable-network-policy --cluster-cidr=192.168.0.0/16"
     - name: install K3s master server
-      shell: curl -sfL https://get.k3s.io | sh -s - server --datastore-endpoint="mysql://{{ k3s_username }}:{{ k3s_passwd }}@tcp({{ nodes.haproxy.ip }}:33306)/{{ k3s_database_name }}" --node-taint CriticalAddonsOnly=true:NoExecute  --tls-san {{ nodes.haproxy.ip }}
+      shell: curl -sfL https://get.k3s.io | sh -s - server --cluster-init --node-taint CriticalAddonsOnly=true:NoExecute  --tls-san {{ nodes.haproxy.ip }}
 
     - name: Fetch master token
       ansible.builtin.fetch:
@@ -147,10 +80,7 @@
         dest: files/kubeconfig-k3s
         flat: yes
 
-##########################
-# Configuring worker nodes
-##########################
-# And now, we install the two other servers
+## And now, we install the two other servers
 - name: Setup K3S Control Plane nodes
   hosts: secondary
   vars_files:
@@ -166,7 +96,7 @@
         name: "{{ new_hostname }}"
 
     - name: Install K3s secondary control plane servers
-      shell: curl -sfL https://get.k3s.io | sh -s - server --datastore-endpoint="mysql://{{ k3s_username }}:{{ k3s_passwd }}@tcp({{ nodes.haproxy.ip }}:33306)/{{ k3s_database_name }}" --token={{ token }} --node-taint CriticalAddonsOnly=true:NoExecute  --tls-san {{ nodes.haproxy.ip }}
+      shell: curl -sfL https://get.k3s.io | sh -s - server  --server https://{{ nodes.haproxy.ip }}:6443 --token={{ token }} --node-taint CriticalAddonsOnly=true:NoExecute  --tls-san {{ nodes.haproxy.ip }}
 
   handlers:
     - name: Restart secondary servers
