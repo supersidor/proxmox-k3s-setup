@@ -1,0 +1,8 @@
+#cloud-config
+#/var/lib/vz/snippets/ubuntu.yaml
+runcmd:
+  - apt-get update
+  - apt-get install -y qemu-guest-agent open-iscsi
+  - systemctl enable ssh
+  - reboot
+# Taken from https://forum.proxmox.com/threads/combining-custom-cloud-init-with-auto->

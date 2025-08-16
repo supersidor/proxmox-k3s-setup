@@ -70,32 +70,25 @@ locals {
 
 resource "proxmox_vm_qemu" "cloudinit-nodes" {
   for_each    = local.vm_settings
-  name                    = each.key
-  target_node             = var.target_host
-  clone                   = each.value.os
-  full_clone              = true
-  memory                  = 4096
-  bios                    = "ovmf"
-
-  bootdisk                = "virtio"
-  scsihw                  = "virtio-scsi-single"
-  agent = 1
+  name        = each.key
+  target_node = var.target_host
+  vmid        = each.value.vmid
+  clone       = each.value.os
+  full_clone  = true
+  memory      = each.value.ram
+  bios        = "ovmf"
+  bootdisk   = "virtio"
+  scsihw     = "virtio-scsi-single"
+  agent      = 1
   ciuser     = "test"
   cipassword = "test"
   cicustom   = "vendor=local:snippets/ubuntu.yaml" # /var/lib/vz/snippets/qemu-guest-agent.yml
-
-  tags        = "k3s,${each.value.type}"
+  sshkeys    = var.ansible_public_ssh_key
+  tags       = "k3s,${each.value.type}"
   cpu {
-    cores   = 2
+    cores   = each.value.cores
     sockets = 1
   }
-
-  # disk {
-  #   slot    = "scsi0"
-  #   size    = "20G"
-  #   type    = "disk"
-  #   storage = "local-lvm"
-  # }
 
   disks {
     scsi {
@@ -118,10 +111,10 @@ resource "proxmox_vm_qemu" "cloudinit-nodes" {
   }
 
   network {
-    id     = 0
-    model  = "virtio"
-    bridge = "vmbr0"
-    macaddr  = each.value.macaddr
+    id      = 0
+    model   = "virtio"
+    bridge  = "vmbr0"
+    macaddr = each.value.macaddr
   }
 
   serial {
@@ -132,17 +125,17 @@ resource "proxmox_vm_qemu" "cloudinit-nodes" {
     type = "serial0"
   }
 
-  os_type = "cloud-init" # if the template is a cloud-init template
+  os_type   = "cloud-init" # if the template is a cloud-init template
   ipconfig0 = "ip=dhcp"
-  boot = "order=virtio0"
+  boot      = "order=virtio0"
 
 }
 
 resource "local_file" "ansible_inventory" {
   content = templatefile("templates/hosts.tmpl",
     {
-      primary   = { "name" = local.vm_settings.master0.name, "ip" = local.vm_settings.master0.ip }
-      secondary = [for j in local.vm_settings : { "name" : j.name, "ip" : j.ip } if j.type == "master" && j.name != local.vm_settings.master0.name]
+      primary   = { "name" = local.vm_settings.master1.name, "ip" = local.vm_settings.master1.ip }
+      secondary = [for j in local.vm_settings : { "name" : j.name, "ip" : j.ip } if j.type == "master" && j.name != local.vm_settings.master1.name]
       workers   = [for j in local.vm_settings : { "name" : j.name, "ip" : j.ip } if j.type == "worker"]
       nginx     = { "name" = local.vm_settings.haproxy.name, "ip" = local.vm_settings.haproxy.ip }
     }
@@ -153,7 +146,7 @@ resource "local_file" "ansible_inventory" {
 resource "local_file" "nginx_conf" {
   content = templatefile("templates/nginx.tmpl",
     {
-      control  = [for j in local.vm_settings : j.ip if j.type == "master"]
+      control = [for j in local.vm_settings : j.ip if j.type == "master"]
     }
   )
   filename = "files/nginx.conf"
