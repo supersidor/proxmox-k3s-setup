@@ -5,12 +5,6 @@ variable "api_url" {
 }
 
 
-variable "token" {
-  description = "token for auth"
-  type        = string
-  default = "apiuser@pve!mytoken=a40facf6-0251-46e8-bfac-a63ef3181b4c"
-}
-
 variable "target_host" {
   description = "Hostname to deploy to"
   default     = "home1"
