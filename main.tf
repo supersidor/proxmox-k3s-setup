@@ -6,11 +6,11 @@ provider "proxmox" {
   pm_minimum_permission_check = false
 }
 #
-# locals {
-#   vm_settings = merge(flatten([for i in fileset(".", "vars/nodes.yaml") : yamldecode(file(i))["nodes"]])...)
-#   network     = yamldecode(file("vars/network.yaml"))
-#   db          = yamldecode(file("vars/db.yaml"))
-# }
+locals {
+  vm_settings = merge(flatten([for i in fileset(".", "vars/nodes.yaml") : yamldecode(file(i))["nodes"]])...)
+  # network     = yamldecode(file("vars/network.yaml"))
+  # db          = yamldecode(file("vars/db.yaml"))
+}
 #
 # resource "proxmox_vm_qemu" "cloudinit-nodes" {
 #   for_each    = local.vm_settings
@@ -66,38 +66,17 @@ provider "proxmox" {
 #   }
 # }
 #
-# resource "local_file" "ansible_inventory" {
-#   content = templatefile("templates/hosts.tmpl",
-#     {
-#       primary   = { "name" = local.vm_settings.master0.name, "ip" = local.vm_settings.master0.ip } #[for j in local.vm_settings : { "name" : j.name, "ip" : j.ip } if j.name == local.vm_settings.master0.name]
-#       secondary = [for j in local.vm_settings : { "name" : j.name, "ip" : j.ip } if j.type == "master" && j.name != local.vm_settings.master0.name]
-#       workers   = [for j in local.vm_settings : { "name" : j.name, "ip" : j.ip } if j.type == "worker"]
-#       nginx     = { "name" = local.vm_settings.haproxy.name, "ip" = local.vm_settings.haproxy.ip }
-#       mysql     = { "name" = local.vm_settings.database.name, "ip" = local.vm_settings.database.ip }
-#       db        = { "user" = local.db.user, "dbname" = local.db.dbname, "password" = local.db.pwd }
-#     }
-#   )
-#   filename = "inventory/hosts.ini"
-# }
-#
-# resource "local_file" "nginx_conf" {
-#   content = templatefile("templates/nginx.tmpl",
-#     {
-#       control  = [for j in local.vm_settings : j.ip if j.type == "master"]
-#       mysql_ip = local.vm_settings.database.ip
-#     }
-#   )
-#   filename = "files/nginx.conf"
-# }
 
-resource "proxmox_vm_qemu" "myvm" {
-  name                    = "terraform-vm1"
-  target_node             = "home1"                 # Node where VM will be created
-  clone                   = "ubuntu-noble-template" # Name of the existing template VM
-  full_clone              = true                   # true = independent copy, false = linked clone
+
+resource "proxmox_vm_qemu" "cloudinit-nodes" {
+  for_each    = local.vm_settings
+  name                    = each.key
+  target_node             = var.target_host
+  clone                   = each.value.os
+  full_clone              = true
   memory                  = 4096
   bios                    = "ovmf"
-  tags                    = "test"
+
   bootdisk                = "virtio"
   scsihw                  = "virtio-scsi-single"
   agent = 1
@@ -105,7 +84,7 @@ resource "proxmox_vm_qemu" "myvm" {
   cipassword = "test"
   cicustom   = "vendor=local:snippets/ubuntu.yaml" # /var/lib/vz/snippets/qemu-guest-agent.yml
 
-
+  tags        = "k3s,${each.value.type}"
   cpu {
     cores   = 2
     sockets = 1
@@ -130,7 +109,7 @@ resource "proxmox_vm_qemu" "myvm" {
       virtio0 {
         disk {
           storage = "local-lvm"
-          size    = "20G"
+          size    = each.value.disksize
           discard = true
         }
       }
@@ -142,6 +121,7 @@ resource "proxmox_vm_qemu" "myvm" {
     id     = 0
     model  = "virtio"
     bridge = "vmbr0"
+    macaddr  = each.value.macaddr
   }
 
   serial {
@@ -156,4 +136,25 @@ resource "proxmox_vm_qemu" "myvm" {
   ipconfig0 = "ip=dhcp"
   boot = "order=virtio0"
 
+}
+
+resource "local_file" "ansible_inventory" {
+  content = templatefile("templates/hosts.tmpl",
+    {
+      primary   = { "name" = local.vm_settings.master0.name, "ip" = local.vm_settings.master0.ip }
+      secondary = [for j in local.vm_settings : { "name" : j.name, "ip" : j.ip } if j.type == "master" && j.name != local.vm_settings.master0.name]
+      workers   = [for j in local.vm_settings : { "name" : j.name, "ip" : j.ip } if j.type == "worker"]
+      nginx     = { "name" = local.vm_settings.haproxy.name, "ip" = local.vm_settings.haproxy.ip }
+    }
+  )
+  filename = "inventory/hosts.ini"
+}
+
+resource "local_file" "nginx_conf" {
+  content = templatefile("templates/nginx.tmpl",
+    {
+      control  = [for j in local.vm_settings : j.ip if j.type == "master"]
+    }
+  )
+  filename = "files/nginx.conf"
 }
