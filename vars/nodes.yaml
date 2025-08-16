@@ -2,21 +2,12 @@ nodes:
   haproxy:
     name: k3s-nginx
     type: load-balancer
-    ip: 192.168.50.156
+    ip: 192.168.50.149
     macaddr: 7A:00:00:00:01:20
-    cores: 4
-    ram: 8192
+    cores: 2
+    ram: 4192
+    disksize: 20G
     vmid: 200
-    os: ubuntu-noble-template
-    boot: started
-  database:
-    name: k3s-mysql
-    type: database
-    ip: 192.168.50.157
-    macaddr: 7A:00:00:00:01:30
-    cores: 4
-    ram: 8192
-    vmid: 201
     os: ubuntu-noble-template
     boot: started
   master0:
@@ -24,8 +15,9 @@ nodes:
     type: master
     ip: 192.168.50.150
     macaddr: 7A:00:00:00:01:00
-    cores: 4
-    ram: 16384
+    cores: 2
+    ram: 4192
+    disksize: 20G
     vmid: 210
     os: ubuntu-noble-template
     boot: started
@@ -36,6 +28,7 @@ nodes:
     macaddr: 7A:00:00:00:01:01
     cores: 4
     ram: 8192
+    disksize: 20G
     vmid: 211
     os: ubuntu-noble-template
     boot: started
@@ -46,6 +39,7 @@ nodes:
     macaddr: 7A:00:00:00:01:02
     cores: 4
     ram: 8192
+    disksize: 20G
     vmid: 212
     os: ubuntu-noble-template
     boot: started
@@ -54,8 +48,9 @@ nodes:
     type: worker
     ip: 192.168.50.153
     macaddr: 7A:00:00:00:01:10
-    cores: 4
-    ram: 8192
+    cores: 2
+    ram: 4192
+    disksize: 40G
     vmid: 220
     os: ubuntu-noble-template
     boot: started
@@ -64,8 +59,9 @@ nodes:
     type: worker
     ip: 192.168.50.154
     macaddr: 7A:00:00:00:01:11
-    cores: 4
+    cores: 2
     ram: 8192
+    disksize: 40G
     vmid: 221
     os: ubuntu-noble-template
     boot: started
@@ -74,8 +70,42 @@ nodes:
     type: worker
     ip: 192.168.50.155
     macaddr: 7A:00:00:00:01:12
-    cores: 4
+    cores: 2
     ram: 8192
+    disksize: 40G
     vmid: 222
+    os: ubuntu-noble-template
+    boot: started
+  worker3:
+    name: k3s-worker-3
+    type: worker
+    ip: 192.168.50.156
+    macaddr: 7A:00:00:00:01:13
+    cores: 2
+    ram: 8192
+    disksize: 40G
+    vmid: 223
+    os: ubuntu-noble-template
+    boot: started
+  worker4:
+    name: k3s-worker-4
+    type: worker
+    ip: 192.168.50.157
+    macaddr: 7A:00:00:00:01:14
+    cores: 2
+    ram: 8192
+    disksize: 40G
+    vmid: 224
+    os: ubuntu-noble-template
+    boot: started
+  worker5:
+    name: k3s-worker-5
+    type: worker
+    ip: 192.168.50.158
+    macaddr: 7A:00:00:00:01:15
+    cores: 2
+    ram: 8192
+    disksize: 40G
+    vmid: 225
     os: ubuntu-noble-template
     boot: started
