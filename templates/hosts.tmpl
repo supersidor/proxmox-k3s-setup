@@ -1,9 +1,9 @@
 [primary]
-${ primary.ip } new_hostname=${ primary.name }
+${ primary.ip } new_hostname=${ primary.name } node=${ primary.node }
 
 [secondary]
 %{ for i in secondary ~}
-${ i.ip } new_hostname=${ i.name }
+${ i.ip } new_hostname=${ i.name } node=${ i.node }
 %{ endfor ~}
 
 [control:children]
@@ -15,7 +15,7 @@ nginx_ip=${ nginx.ip }
 
 [worker]
 %{ for i in workers ~}
-${ i.ip } new_hostname=${ i.name }
+${ i.ip } new_hostname=${ i.name }  node=${ i.node }
 %{ endfor ~}
 
 [worker:vars]
