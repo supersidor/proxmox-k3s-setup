@@ -138,9 +138,9 @@ resource "proxmox_vm_qemu" "cloudinit-nodes" {
 resource "local_file" "ansible_inventory" {
   content = templatefile("templates/hosts.tmpl",
     {
-      primary   = { "name" = local.vm_settings.master1.name, "ip" = local.vm_settings.master1.ip }
-      secondary = [for j in local.vm_settings : { "name" : j.name, "ip" : j.ip } if j.type == "master" && j.name != local.vm_settings.master1.name]
-      workers   = [for j in local.vm_settings : { "name" : j.name, "ip" : j.ip } if j.type == "worker"]
+      primary   = { "name" = local.vm_settings.master1.name, "ip" = local.vm_settings.master1.ip, "node" = local.vm_settings.master1.node }
+      secondary = [for j in local.vm_settings : { "name" : j.name, "ip" : j.ip , "node" : j.node } if j.type == "master" && j.name != local.vm_settings.master1.name]
+      workers   = [for j in local.vm_settings : { "name" : j.name, "ip" : j.ip, "node" : j.node } if j.type == "worker"]
       nginx     = { "name" = local.vm_settings.haproxy.name, "ip" = local.vm_settings.haproxy.ip }
     }
   )
