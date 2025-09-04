@@ -71,7 +71,7 @@ locals {
 resource "proxmox_vm_qemu" "cloudinit-nodes" {
   for_each    = local.vm_settings
   name        = each.key
-  target_node = var.target_host
+  target_node = each.value.node
   vmid        = each.value.vmid
   clone       = each.value.os
   full_clone  = true
@@ -88,6 +88,10 @@ resource "proxmox_vm_qemu" "cloudinit-nodes" {
   cpu {
     cores   = each.value.cores
     sockets = 1
+  }
+
+  lifecycle {
+    ignore_changes = [bootdisk]
   }
 
   disks {

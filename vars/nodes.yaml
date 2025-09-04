@@ -1,6 +1,7 @@
 nodes:
   haproxy:
     name: k3s-nginx
+    node: home1
     type: load-balancer
     ip: 192.168.50.149
     macaddr: 7A:00:00:00:01:20
@@ -12,6 +13,7 @@ nodes:
     boot: started
   master1:
     name: k3s-ctrl-1
+    node: home1
     type: master
     ip: 192.168.50.150
     macaddr: 7A:00:00:00:01:00
@@ -23,6 +25,7 @@ nodes:
     boot: started
   master2:
     name: k3s-ctrl-2
+    node: home2
     type: master
     ip: 192.168.50.151
     macaddr: 7A:00:00:00:01:01
@@ -34,6 +37,7 @@ nodes:
     boot: started
   master3:
     name: k3s-ctrl-3
+    node: home1
     type: master
     ip: 192.168.50.152
     macaddr: 7A:00:00:00:01:02
@@ -45,46 +49,62 @@ nodes:
     boot: started
   worker1:
     name: k3s-worker-1
+    node: home1
     type: worker
     ip: 192.168.50.153
     macaddr: 7A:00:00:00:01:10
     cores: 4
     ram: 10000
-    disksize: 40G
+    disksize: 80G
     vmid: 220
     os: ubuntu-noble-template
     boot: started
   worker2:
     name: k3s-worker-2
+    node: home1
     type: worker
     ip: 192.168.50.154
     macaddr: 7A:00:00:00:01:11
     cores: 4
     ram: 10000
-    disksize: 40G
+    disksize: 80G
     vmid: 221
     os: ubuntu-noble-template
     boot: started
   worker3:
     name: k3s-worker-3
+    node: home1
     type: worker
     ip: 192.168.50.155
     macaddr: 7A:00:00:00:01:12
     cores: 4
     ram: 10000
-    disksize: 40G
+    disksize: 80G
     vmid: 222
     os: ubuntu-noble-template
     boot: started
   worker4:
     name: k3s-worker-4
+    node: home1
     type: worker
     ip: 192.168.50.156
     macaddr: 7A:00:00:00:01:13
     cores: 4
     ram: 10000
-    disksize: 40G
+    disksize: 80G
     vmid: 223
     os: ubuntu-noble-template
     boot: started
 
+  worker5:
+    name: k3s-worker-5
+    node: home2
+    type: worker
+    ip: 192.168.50.157
+    macaddr: 7A:00:00:00:01:14
+    cores: 2
+    ram: 4096
+    disksize: 40G
+    vmid: 224
+    os: ubuntu-noble-template-2
+    boot: started
