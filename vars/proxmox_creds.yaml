@@ -1,0 +1,17 @@
+# Proxmox API Credentials
+# This file should be encrypted with ansible-vault for production use
+# 
+# To encrypt this file:
+# ansible-vault encrypt vars/proxmox_creds.yaml
+#
+# To use in playbook:
+# ansible-playbook snapshot-vms.yaml --ask-vault-pass
+
+proxmox_api_host: "192.168.50.134"
+proxmox_api_port: 8006
+proxmox_api_user: "root@pam"
+proxmox_password: "your-proxmox-password-here"
+
+# Alternative: Use API tokens instead of password (more secure)
+# proxmox_api_token_id: "ansible@pam!snapshot-token"
+# proxmox_api_token_secret: "your-token-secret-here"

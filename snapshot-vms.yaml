@@ -1,0 +1,101 @@
+---
+##################################
+# Snapshot all VMs using Proxmox API
+##################################
+- name: Create Snapshots for all VMs
+  hosts: localhost
+  gather_facts: true
+  vars_files:
+    - vars/nodes.yaml
+  vars:
+    # Proxmox API credentials
+    proxmox_api_host: "192.168.50.134"
+    proxmox_api_port: 8006
+    proxmox_api_user: "root@pam"  # Change to your Proxmox user
+    proxmox_api_password: "{{ proxmox_password | default('your-password-here') }}"  # Use vault or pass as extra var
+    
+    # Snapshot configuration
+    snapshot_name_prefix: "ansible-snapshot"
+    snapshot_description: "Automated snapshot created by Ansible on {{ ansible_date_time.iso8601 }}"
+    
+  tasks:
+    - name: Get current timestamp
+      ansible.builtin.set_fact:
+        timestamp: "{{ ansible_date_time.epoch }}"
+        readable_date: "{{ ansible_date_time.year }}{{ ansible_date_time.month }}{{ ansible_date_time.day }}-{{ ansible_date_time.hour }}{{ ansible_date_time.minute }}"
+
+    - name: Display snapshot information
+      ansible.builtin.debug:
+        msg: "Creating snapshots with name: {{ snapshot_name_prefix }}-{{ readable_date }} for {{ nodes | length }} VMs"
+
+    - name: Create snapshots for all VMs
+      community.general.proxmox_snap:
+        api_host: "{{ proxmox_api_host }}"
+        api_port: "{{ proxmox_api_port }}"
+        api_user: "{{ proxmox_api_user }}"
+        api_password: "{{ proxmox_api_password }}"
+        validate_certs: false
+        hostname: "{{ item.value.node }}"
+        vmid: "{{ item.value.vmid }}"
+        snapname: "{{ snapshot_name_prefix }}-{{ readable_date }}"
+        description: "{{ snapshot_description }}"
+        state: present
+      loop: "{{ nodes | dict2items }}"
+      register: snapshot_results
+      retries: 3
+      delay: 5
+      failed_when: false  # Continue even if one VM fails
+      
+    - name: Display snapshot results
+      ansible.builtin.debug:
+        msg: |
+          VM: {{ item.item.key }} (VMID: {{ item.item.value.vmid }})
+          Node: {{ item.item.value.node }}
+          Status: {{ 'SUCCESS' if item.failed == false else 'FAILED' }}
+          {{ item.msg | default('') }}
+      loop: "{{ snapshot_results.results }}"
+      
+    - name: Summary of snapshot operation
+      ansible.builtin.debug:
+        msg: |
+          Snapshot operation completed!
+          Total VMs: {{ nodes | length }}
+          Successful: {{ snapshot_results.results | selectattr('failed', 'equalto', false) | list | length }}
+          Failed: {{ snapshot_results.results | selectattr('failed', 'equalto', true) | list | length }}
+          Snapshot name: {{ snapshot_name_prefix }}-{{ readable_date }}
+
+###################################
+## Optional: List existing snapshots
+###################################
+#- name: List existing snapshots (optional)
+#  hosts: localhost
+#  gather_facts: true
+#  vars_files:
+#    - vars/nodes.yaml
+#  vars:
+#    proxmox_api_host: "192.168.50.134"
+#    proxmox_api_port: 8006
+#    proxmox_api_user: "root@pam"
+#    proxmox_api_password: "{{ proxmox_password | default('your-password-here') }}"
+#
+#  tasks:
+#    - name: Get VM snapshots information
+#      uri:
+#        url: "https://{{ proxmox_api_host }}:{{ proxmox_api_port }}/api2/json/nodes/{{ item.value.node }}/qemu/{{ item.value.vmid }}/snapshot"
+#        method: GET
+#        user: "{{ proxmox_api_user }}"
+#        password: "{{ proxmox_api_password }}"
+#        force_basic_auth: yes
+#        validate_certs: no
+#        return_content: yes
+#      loop: "{{ nodes | dict2items }}"
+#      register: vm_snapshots
+#      failed_when: false
+#
+#    - name: Display snapshots for each VM
+#      ansible.builtin.debug:
+#        msg: |
+#          VM: {{ item.item.key }} (VMID: {{ item.item.value.vmid }})
+#          Snapshots: {{ (item.json.data | default([])) | selectattr('name', 'ne', 'current') | map(attribute='name') | list | join(', ') }}
+#      loop: "{{ vm_snapshots.results }}"
+#      when: item.status == 200
