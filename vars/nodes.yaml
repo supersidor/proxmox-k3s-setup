@@ -106,5 +106,5 @@ nodes:
     ram: 4096
     disksize: 40G
     vmid: 224
-    os: ubuntu-noble-template-2
+    os: ubuntu-noble-template
     boot: started
