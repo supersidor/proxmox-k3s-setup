@@ -5,12 +5,6 @@ variable "api_url" {
 }
 
 
-variable "target_host" {
-  description = "Hostname to deploy to"
-  default     = "home1"
-  type        = string
-}
-
 variable "storage_name" {
   description = "Storage name on Proxmox server"
   default     = "local-lvm"
