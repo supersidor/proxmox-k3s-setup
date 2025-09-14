@@ -7,7 +7,12 @@ provider "proxmox" {
 }
 #
 locals {
-  vm_settings = merge(flatten([for i in fileset(".", "vars/nodes.yaml") : yamldecode(file(i))["nodes"]])...)
+  vm_settings = {
+    for k, v in merge(flatten([for i in fileset(".", "vars/nodes.yaml") : yamldecode(file(i))["nodes"]])...) :
+    k => merge(v, {
+      host_name = "${v.node}-${v.name}"
+    })
+  }
   # network     = yamldecode(file("vars/network.yaml"))
   # db          = yamldecode(file("vars/db.yaml"))
 }
@@ -70,7 +75,7 @@ locals {
 
 resource "proxmox_vm_qemu" "cloudinit-nodes" {
   for_each    = local.vm_settings
-  name        = each.key
+  name        = each.value.host_name
   target_node = each.value.node
   vmid        = each.value.vmid
   clone       = each.value.os
@@ -138,10 +143,10 @@ resource "proxmox_vm_qemu" "cloudinit-nodes" {
 resource "local_file" "ansible_inventory" {
   content = templatefile("templates/hosts.tmpl",
     {
-      primary   = { "name" = local.vm_settings.master1.name, "ip" = local.vm_settings.master1.ip, "node" = local.vm_settings.master1.node }
-      secondary = [for j in local.vm_settings : { "name" : j.name, "ip" : j.ip , "node" : j.node } if j.type == "master" && j.name != local.vm_settings.master1.name]
-      workers   = [for j in local.vm_settings : { "name" : j.name, "ip" : j.ip, "node" : j.node } if j.type == "worker"]
-      nginx     = { "name" = local.vm_settings.haproxy.name, "ip" = local.vm_settings.haproxy.ip }
+      primary   = { "name" = local.vm_settings.master1.host_name, "ip" = local.vm_settings.master1.ip, "node" = local.vm_settings.master1.node }
+      secondary = [for j in local.vm_settings : { "name" : j.host_name, "ip" : j.ip , "node" : j.node } if j.type == "master" && j.name != local.vm_settings.master1.name]
+      workers   = [for j in local.vm_settings : { "name" : j.host_name, "ip" : j.ip, "node" : j.node } if j.type == "worker"]
+      nginx     = { "name" = local.vm_settings.haproxy.host_name, "ip" = local.vm_settings.haproxy.ip }
     }
   )
   filename = "inventory/hosts.ini"

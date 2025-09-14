@@ -95,7 +95,6 @@ nodes:
     vmid: 223
     os: ubuntu-noble-template
     boot: started
-
   worker5:
     name: k3s-worker-5
     node: home2
