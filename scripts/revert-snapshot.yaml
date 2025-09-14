@@ -1,0 +1,208 @@
+---
+##################################
+# Revert all VMs to a specific snapshot
+##################################
+- name: Revert VMs to Snapshot
+  hosts: localhost
+  gather_facts: true
+  vars_files:
+    - vars/nodes.yaml
+  vars:
+    # Proxmox API credentials
+    proxmox_api_host: "192.168.50.134"
+    proxmox_api_port: 8006
+    proxmox_api_user: "root@pam"
+    proxmox_api_password: "{{ proxmox_password | default('your-password-here') }}"
+    
+    # Snapshot configuration
+    target_snapshot_name: "{{ snapshot_name | default('') }}"
+    auto_start_vms: "{{ start_vms_after_revert | default(true) }}"
+    exclude_vms: "{{ exclude_vm_list | default([]) }}"  # List of VM names to exclude
+    
+  tasks:
+    - name: Validate required parameters
+      ansible.builtin.fail:
+        msg: "snapshot_name is required! Use -e 'snapshot_name=your-snapshot-name'"
+      when: target_snapshot_name == ""
+
+    - name: Filter VMs to process
+      ansible.builtin.set_fact:
+        vms_to_process: "{{ nodes | dict2items | rejectattr('key', 'in', exclude_vms) | list }}"
+
+    - name: Display revert operation warning
+      ansible.builtin.debug:
+        msg: |
+          ⚠️  WARNING: This will revert {{ vms_to_process | length }} VMs to snapshot '{{ target_snapshot_name }}'
+          
+          VMs to be reverted:
+          {% for vm in vms_to_process %}
+          - {{ vm.key }} (VMID: {{ vm.value.vmid }}, Node: {{ vm.value.node }})
+          {% endfor %}
+          
+          ⚠️  ALL DATA CREATED AFTER THE SNAPSHOT WILL BE LOST!
+          
+          Excluded VMs: {{ exclude_vms | join(', ') if exclude_vms | length > 0 else 'None' }}
+          Auto-start after revert: {{ 'Yes' if auto_start_vms else 'No' }}
+
+    - name: Confirmation prompt
+      ansible.builtin.pause:
+        prompt: |
+          
+          Are you sure you want to proceed with reverting {{ vms_to_process | length }} VMs to snapshot '{{ target_snapshot_name }}'?
+          This action CANNOT be undone and will result in data loss!
+          
+          Type 'yes' to continue
+      register: user_confirmation
+      when: not skip_confirmation | default(false)
+
+    - name: Validate confirmation
+      ansible.builtin.fail:
+        msg: "Operation cancelled by user"
+      when: 
+        - not skip_confirmation | default(false)
+        - user_confirmation.user_input | lower != 'yes'
+
+    - name: Get VM current status
+      uri:
+        url: "https://{{ proxmox_api_host }}:{{ proxmox_api_port }}/api2/json/nodes/{{ item.value.node }}/qemu/{{ item.value.vmid }}/status/current"
+        method: GET
+        user: "{{ proxmox_api_user }}"
+        password: "{{ proxmox_api_password }}"
+        force_basic_auth: yes
+        validate_certs: no
+        return_content: yes
+      loop: "{{ vms_to_process }}"
+      register: vm_status_results
+      failed_when: false
+
+    - name: Stop running VMs before revert
+      community.general.proxmox_kvm:
+        api_host: "{{ proxmox_api_host }}"
+        api_port: "{{ proxmox_api_port }}"
+        api_user: "{{ proxmox_api_user }}"
+        api_password: "{{ proxmox_api_password }}"
+        validate_certs: false
+        node: "{{ item.item.value.node }}"
+        vmid: "{{ item.item.value.vmid }}"
+        state: stopped
+        force: true
+        timeout: 60
+      loop: "{{ vm_status_results.results }}"
+      when: 
+        - item.status == 200
+        - item.json.data.status == "running"
+      register: vm_stop_results
+      failed_when: false
+
+    - name: Wait for VMs to stop
+      ansible.builtin.pause:
+        seconds: 10
+      when: vm_stop_results.results | selectattr('changed', 'equalto', true) | list | length > 0
+
+    - name: Revert VMs to snapshot
+      community.general.proxmox_snap:
+        api_host: "{{ proxmox_api_host }}"
+        api_port: "{{ proxmox_api_port }}"
+        api_user: "{{ proxmox_api_user }}"
+        api_password: "{{ proxmox_api_password }}"
+        validate_certs: false
+        hostname: "{{ item.value.node }}"
+        vmid: "{{ item.value.vmid }}"
+        snapname: "{{ target_snapshot_name }}"
+        state: rollback
+      loop: "{{ vms_to_process }}"
+      register: revert_results
+      retries: 3
+      delay: 10
+      failed_when: false
+
+    - name: Wait after revert
+      ansible.builtin.pause:
+        seconds: 5
+
+    - name: Start VMs after revert (if requested)
+      community.general.proxmox_kvm:
+        api_host: "{{ proxmox_api_host }}"
+        api_port: "{{ proxmox_api_port }}"
+        api_user: "{{ proxmox_api_user }}"
+        api_password: "{{ proxmox_api_password }}"
+        validate_certs: false
+        node: "{{ item.value.node }}"
+        vmid: "{{ item.value.vmid }}"
+        state: started
+        timeout: 120
+      loop: "{{ vms_to_process }}"
+      when: auto_start_vms
+      register: vm_start_results
+      failed_when: false
+
+    - name: Display revert results
+      ansible.builtin.debug:
+        msg: |
+          VM: {{ item.item.key }} (VMID: {{ item.item.value.vmid }})
+          Node: {{ item.item.value.node }}
+          Revert Status: {{ 'SUCCESS' if item.failed == false else 'FAILED' }}
+          {% if item.failed %}Error: {{ item.msg | default('Unknown error') }}{% endif %}
+      loop: "{{ revert_results.results }}"
+
+    - name: Display start results (if applicable)
+      ansible.builtin.debug:
+        msg: |
+          VM: {{ item.item.key }} (VMID: {{ item.item.value.vmid }})
+          Start Status: {{ 'SUCCESS' if item.failed == false else 'FAILED' }}
+          {% if item.failed %}Error: {{ item.msg | default('Unknown error') }}{% endif %}
+      loop: "{{ vm_start_results.results | default([]) }}"
+      when: auto_start_vms
+
+    - name: Summary of revert operation
+      ansible.builtin.debug:
+        msg: |
+          
+          🔄 Snapshot Revert Operation Completed!
+          
+          Target snapshot: {{ target_snapshot_name }}
+          Total VMs processed: {{ vms_to_process | length }}
+          Successful reverts: {{ revert_results.results | selectattr('failed', 'equalto', false) | list | length }}
+          Failed reverts: {{ revert_results.results | selectattr('failed', 'equalto', true) | list | length }}
+          {% if auto_start_vms %}
+          VMs started: {{ vm_start_results.results | selectattr('failed', 'equalto', false) | list | length if vm_start_results.results is defined else 0 }}
+          VMs failed to start: {{ vm_start_results.results | selectattr('failed', 'equalto', true) | list | length if vm_start_results.results is defined else 0 }}
+          {% endif %}
+          Excluded VMs: {{ exclude_vms | join(', ') if exclude_vms | length > 0 else 'None' }}
+
+##################################
+# Post-revert verification (optional)
+##################################
+- name: Verify VM status after revert
+  hosts: localhost
+  gather_facts: false
+  vars_files:
+    - vars/nodes.yaml
+  vars:
+    proxmox_api_host: "192.168.50.134"
+    proxmox_api_port: 8006
+    proxmox_api_user: "root@pam"
+    proxmox_api_password: "{{ proxmox_password | default('your-password-here') }}"
+    exclude_vms: "{{ exclude_vm_list | default([]) }}"
+
+  tasks:
+    - name: Get post-revert VM status
+      uri:
+        url: "https://{{ proxmox_api_host }}:{{ proxmox_api_port }}/api2/json/nodes/{{ item.value.node }}/qemu/{{ item.value.vmid }}/status/current"
+        method: GET
+        user: "{{ proxmox_api_user }}"
+        password: "{{ proxmox_api_password }}"
+        force_basic_auth: yes
+        validate_certs: no
+        return_content: yes
+      loop: "{{ nodes | dict2items | rejectattr('key', 'in', exclude_vms) | list }}"
+      register: final_vm_status
+      failed_when: false
+
+    - name: Display final VM status
+      ansible.builtin.debug:
+        msg: |
+          VM: {{ item.item.key }} (VMID: {{ item.item.value.vmid }})
+          Status: {{ item.json.data.status | upper if item.status == 200 else 'ERROR' }}
+          Uptime: {{ item.json.data.uptime | default('N/A') if item.status == 200 else 'N/A' }}
+      loop: "{{ final_vm_status.results }}"
