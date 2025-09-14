@@ -58,8 +58,9 @@
         name: "{{ new_hostname }}"
     # Try setting up some additional stuff, just for fun
     # INSTALL_K3S_EXEC="--flannel-backend=none --disable-network-policy --cluster-cidr=192.168.0.0/16"
+    # --node-taint CriticalAddonsOnly=true:NoExecute
     - name: install K3s master server
-      shell: curl -sfL https://get.k3s.io | sh -s - server --cluster-init --node-taint CriticalAddonsOnly=true:NoExecute  --tls-san {{ nodes.haproxy.ip }} --node-label "proxmox-node={{ node }}"
+      shell: curl -sfL https://get.k3s.io | sh -s - server --cluster-init  --tls-san {{ nodes.haproxy.ip }} --node-label "proxmox-node={{ node }}"
 
     - name: Fetch master token
       ansible.builtin.fetch:
