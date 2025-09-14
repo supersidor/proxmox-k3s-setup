@@ -59,7 +59,7 @@
     # Try setting up some additional stuff, just for fun
     # INSTALL_K3S_EXEC="--flannel-backend=none --disable-network-policy --cluster-cidr=192.168.0.0/16"
     - name: install K3s master server
-      shell: curl -sfL https://get.k3s.io | sh -s - server --cluster-init --node-taint CriticalAddonsOnly=true:NoExecute  --tls-san {{ nodes.haproxy.ip }}
+      shell: curl -sfL https://get.k3s.io | sh -s - server --cluster-init --node-taint CriticalAddonsOnly=true:NoExecute  --tls-san {{ nodes.haproxy.ip }} --node-label "proxmox-node={{ node }}"
 
     - name: Fetch master token
       ansible.builtin.fetch:
@@ -101,7 +101,7 @@
         name: "{{ new_hostname }}"
 
     - name: Install K3s secondary control plane servers
-      shell: curl -sfL https://get.k3s.io | sh -s - server  --server https://{{ nodes.haproxy.ip }}:6443 --token={{ token }} --node-taint CriticalAddonsOnly=true:NoExecute  --tls-san {{ nodes.haproxy.ip }}
+      shell: curl -sfL https://get.k3s.io | sh -s - server  --server https://{{ nodes.haproxy.ip }}:6443 --token={{ token }} --node-taint CriticalAddonsOnly=true:NoExecute  --tls-san {{ nodes.haproxy.ip }} --node-label "proxmox-node={{ node }}"
 
   handlers:
     - name: Restart secondary servers
@@ -127,4 +127,4 @@
         name: "{{ new_hostname }}"
 
     - name: Install K3s worker
-      shell: curl -sfL https://get.k3s.io | K3S_URL=https://{{ nginx_ip}}:6443 K3S_TOKEN={{ token }} sh -
+      shell: curl -sfL https://get.k3s.io | K3S_URL=https://{{ nginx_ip}}:6443 K3S_TOKEN={{ token }} sh -s - --node-label "proxmox-node={{ node }}"

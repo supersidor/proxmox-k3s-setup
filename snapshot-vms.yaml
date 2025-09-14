@@ -15,6 +15,7 @@
     proxmox_api_password: "{{ proxmox_password | default('your-password-here') }}"  # Use vault or pass as extra var
     
     # Snapshot configuration
+    custom_snapshot_name: "{{ snapshot_name | default('') }}"  # Pass custom name via -e snapshot_name=your-name
     snapshot_name_prefix: "ansible-snapshot"
     snapshot_description: "Automated snapshot created by Ansible on {{ ansible_date_time.iso8601 }}"
     
@@ -24,9 +25,13 @@
         timestamp: "{{ ansible_date_time.epoch }}"
         readable_date: "{{ ansible_date_time.year }}{{ ansible_date_time.month }}{{ ansible_date_time.day }}-{{ ansible_date_time.hour }}{{ ansible_date_time.minute }}"
 
+    - name: Set final snapshot name
+      ansible.builtin.set_fact:
+        final_snapshot_name: "{{ custom_snapshot_name if custom_snapshot_name != '' else snapshot_name_prefix + '-' + readable_date }}"
+
     - name: Display snapshot information
       ansible.builtin.debug:
-        msg: "Creating snapshots with name: {{ snapshot_name_prefix }}-{{ readable_date }} for {{ nodes | length }} VMs"
+        msg: "Creating snapshots with name: {{ final_snapshot_name }} for {{ nodes | length }} VMs"
 
     - name: Create snapshots for all VMs
       community.general.proxmox_snap:
@@ -37,7 +42,7 @@
         validate_certs: false
         hostname: "{{ item.value.node }}"
         vmid: "{{ item.value.vmid }}"
-        snapname: "{{ snapshot_name_prefix }}-{{ readable_date }}"
+        snapname: "{{ final_snapshot_name }}"
         description: "{{ snapshot_description }}"
         state: present
       loop: "{{ nodes | dict2items }}"
@@ -62,7 +67,7 @@
           Total VMs: {{ nodes | length }}
           Successful: {{ snapshot_results.results | selectattr('failed', 'equalto', false) | list | length }}
           Failed: {{ snapshot_results.results | selectattr('failed', 'equalto', true) | list | length }}
-          Snapshot name: {{ snapshot_name_prefix }}-{{ readable_date }}
+          Snapshot name: {{ final_snapshot_name }}
 
 ###################################
 ## Optional: List existing snapshots
