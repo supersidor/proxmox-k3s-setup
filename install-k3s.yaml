@@ -58,9 +58,20 @@
         name: "{{ new_hostname }}"
     # Try setting up some additional stuff, just for fun
     # INSTALL_K3S_EXEC="--flannel-backend=none --disable-network-policy --cluster-cidr=192.168.0.0/16"
-    # --node-taint CriticalAddonsOnly=true:NoExecute
+    - name: Create K3s configuration directory
+      file:
+        path: /etc/rancher/k3s
+        state: directory
+        mode: 0755
+
+    - name: Deploy registries.yaml configuration
+      copy:
+        src: files/registries.yaml
+        dest: /etc/rancher/k3s/registries.yaml
+        mode: 0644
+
     - name: install K3s master server
-      shell: curl -sfL https://get.k3s.io | sh -s - server --cluster-init  --tls-san {{ nodes.haproxy.ip }} --node-label "proxmox-node={{ node }}"
+      shell: curl -sfL https://get.k3s.io | sh -s - server --cluster-init --node-taint CriticalAddonsOnly=true:NoExecute --tls-san {{ nodes.haproxy.ip }} --node-label "proxmox-node={{ node }}"
 
     - name: Fetch master token
       ansible.builtin.fetch:
@@ -81,47 +92,8 @@
         dest: files/kubeconfig-k3s
         flat: yes
 
-    - name: install argocd
-      shell: |
-        kubectl create namespace argocd
-        kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
-
-    - name: Wait for ArgoCD to be ready
-      shell: kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=argocd-server -n argocd --timeout=300s
-      retries: 3
-      delay: 10
-
-    - name: Copy ArgoCD configuration to remote
-      copy:
-        src: manifests/argocd-cmd-params-cm.yaml
-        dest: /tmp/argocd-cmd-params-cm.yaml
-
-    - name: Apply ArgoCD configuration
-      shell: kubectl apply -f /tmp/argocd-cmd-params-cm.yaml
-
-    - name: Copy ArgoCD ingress configuration to remote
-      copy:
-        src: manifests/argocd-server-ingress.yaml
-        dest: /tmp/argocd-server-ingress.yaml
-
-    - name: Apply ArgoCD ingress
-      shell: kubectl apply -f /tmp/argocd-server-ingress.yaml
-
-    - name: Restart ArgoCD server deployment
-      shell: kubectl -n argocd rollout restart deployment/argocd-server
-
-    - name: Wait for ArgoCD server to be ready after restart
-      shell: kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=argocd-server -n argocd --timeout=300s
-      retries: 3
-      delay: 10
-
-    - name: Delete auto-generated ArgoCD admin secret
-      shell: kubectl delete secret argocd-initial-admin-secret -n argocd --ignore-not-found=true
-
-    - name: Set ArgoCD admin password to 'admin'
-      shell: |
-        kubectl -n argocd patch secret argocd-secret \
-          -p '{"data": {"admin.password": "'$(htpasswd -nbBC 10 "" admin | tr -d ':\n' | sed 's/$2y/$2a/' | base64 -w0)'"}}'
+    # ArgoCD installation has been moved to a separate playbook: install-argocd.yaml
+    # Run: ansible-playbook -i inventory/hosts.ini install-argocd.yaml
 
 
 ## And now, we install the two other servers
@@ -138,6 +110,18 @@
     - name: Set hostname
       hostname:
         name: "{{ new_hostname }}"
+
+    - name: Create K3s configuration directory
+      file:
+        path: /etc/rancher/k3s
+        state: directory
+        mode: 0755
+
+    - name: Deploy registries.yaml configuration
+      copy:
+        src: files/registries.yaml
+        dest: /etc/rancher/k3s/registries.yaml
+        mode: 0644
 
     - name: Install K3s secondary control plane servers
       shell: curl -sfL https://get.k3s.io | sh -s - server  --server https://{{ nodes.haproxy.ip }}:6443 --token={{ token }} --node-taint CriticalAddonsOnly=true:NoExecute  --tls-san {{ nodes.haproxy.ip }} --node-label "proxmox-node={{ node }}"
@@ -164,6 +148,18 @@
     - name: set hostnames
       hostname:
         name: "{{ new_hostname }}"
+
+    - name: Create K3s configuration directory
+      file:
+        path: /etc/rancher/k3s
+        state: directory
+        mode: 0755
+
+    - name: Deploy registries.yaml configuration
+      copy:
+        src: files/registries.yaml
+        dest: /etc/rancher/k3s/registries.yaml
+        mode: 0644
 
     - name: Install K3s worker
       shell: curl -sfL https://get.k3s.io | K3S_URL=https://{{ nginx_ip}}:6443 K3S_TOKEN={{ token }} sh -s - --node-label "proxmox-node={{ node }}"
