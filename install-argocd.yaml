@@ -1,0 +1,81 @@
+---
+#####################
+# Install and Configure ArgoCD
+#####################
+- name: Install and Configure ArgoCD
+  hosts: primary
+  become: true
+  become_method: sudo
+  gather_facts: false
+  vars_files:
+    - vars/nodes.yaml
+  vars:
+    # ArgoCD configuration variables (can be overridden via -e)
+    argocd_namespace: argocd
+    argocd_admin_password: admin
+    argocd_manifests_url: "https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml"
+
+  tasks:
+    - name: Install ArgoCD
+      shell: |
+        kubectl create namespace {{ argocd_namespace }}
+        kubectl apply -n {{ argocd_namespace }} -f {{ argocd_manifests_url }}
+
+    - name: Wait for ArgoCD to be ready
+      shell: kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=argocd-server -n {{ argocd_namespace }} --timeout=300s
+      retries: 3
+      delay: 10
+
+    - name: Copy ArgoCD configuration to remote
+      copy:
+        src: manifests/argocd-cmd-params-cm.yaml
+        dest: /tmp/argocd-cmd-params-cm.yaml
+
+    - name: Apply ArgoCD configuration
+      shell: kubectl apply -f /tmp/argocd-cmd-params-cm.yaml
+
+    - name: Copy ArgoCD ingress configuration to remote
+      copy:
+        src: manifests/argocd-server-ingress.yaml
+        dest: /tmp/argocd-server-ingress.yaml
+
+    - name: Apply ArgoCD ingress
+      shell: kubectl apply -f /tmp/argocd-server-ingress.yaml
+
+    - name: Restart ArgoCD server deployment
+      shell: kubectl -n {{ argocd_namespace }} rollout restart deployment/argocd-server
+
+    - name: Wait for ArgoCD server to be ready after restart
+      shell: kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=argocd-server -n {{ argocd_namespace }} --timeout=300s
+      retries: 3
+      delay: 10
+
+    - name: Delete auto-generated ArgoCD admin secret
+      shell: kubectl delete secret argocd-initial-admin-secret -n {{ argocd_namespace }} --ignore-not-found=true
+
+    - name: Install apache2-utils for htpasswd command
+      apt:
+        name: apache2-utils
+        state: present
+        update_cache: yes
+
+    - name: Set ArgoCD admin password
+      shell: |
+        kubectl -n {{ argocd_namespace }} patch secret argocd-secret \
+          -p '{"data": {"admin.password": "'$(htpasswd -nbBC 10 "" {{ argocd_admin_password }} | tr -d ':\n' | sed 's/$2y/$2a/' | base64 -w0)'"}}'
+
+    - name: Install root argocd application
+      shell: |
+        kubectl apply -f https://raw.githubusercontent.com/supersidor/argocd/main/root.yaml 
+
+    - name: Display ArgoCD access information
+      debug:
+        msg: |
+          ArgoCD has been installed successfully!
+
+          Access ArgoCD at: https://{{ nodes.haproxy.ip }}/argocd (if ingress is configured)
+          Username: admin
+          Password: {{ argocd_admin_password }}
+
+          To get the ArgoCD admin password from the cluster:
+          kubectl -n {{ argocd_namespace }} get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d

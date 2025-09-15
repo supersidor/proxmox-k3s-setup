@@ -1,7 +1,7 @@
 #!/bin/zsh
 
 # Base ansible-playbook command
-ANSIBLE_CMD="ansible-playbook -vv -i inventory/hosts.ini setup-k3s.yaml -u test --private-key ~/.ssh/id_rsa"
+ANSIBLE_CMD="ansible-playbook -vv -i inventory/hosts.ini install-k3s.yaml -u test --private-key ~/.ssh/id_rsa"
 
 # Check if limit parameter is provided
 if [ -n "$1" ]; then

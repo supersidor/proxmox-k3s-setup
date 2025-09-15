@@ -1,0 +1,6 @@
+mirrors:
+  docker.io:
+    endpoint:
+      - "http://registry.homelab:5000"
+configs:
+  "registry.homelab:5000": {}
