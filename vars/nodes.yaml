@@ -37,7 +37,7 @@ nodes:
     boot: started
   master3:
     name: k3s-ctrl-3
-    node: home1
+    node: home3
     type: master
     ip: 192.168.50.152
     macaddr: 7A:00:00:00:01:02
@@ -105,5 +105,29 @@ nodes:
     ram: 4096
     disksize: 40G
     vmid: 224
+    os: ubuntu-noble-template
+    boot: started
+  worker6:
+    name: k3s-worker-6
+    node: home3
+    type: worker
+    ip: 192.168.50.158
+    macaddr: 7A:00:00:00:01:15
+    cores: 6
+    ram: 8096
+    disksize: 40G
+    vmid: 225
+    os: ubuntu-noble-template
+    boot: started
+  worker7:
+    name: k3s-worker-7
+    node: home3
+    type: worker
+    ip: 192.168.50.159
+    macaddr: 7A:00:00:00:01:16
+    cores: 6
+    ram: 8096
+    disksize: 40G
+    vmid: 226
     os: ubuntu-noble-template
     boot: started

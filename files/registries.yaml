@@ -2,5 +2,10 @@ mirrors:
   docker.io:
     endpoint:
       - "http://registry.homelab:5000"
+  quay.io:
+    endpoint:
+      - "http://registry.homelab:5001"
+
 configs:
   "registry.homelab:5000": {}
+  "registry.homelab:5001": {}
