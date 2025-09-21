@@ -83,18 +83,18 @@ nodes:
     vmid: 222
     os: ubuntu-noble-template
     boot: started
-  worker4:
-    name: k3s-worker-4
-    node: home1
-    type: worker
-    ip: 192.168.50.156
-    macaddr: 7A:00:00:00:01:13
-    cores: 4
-    ram: 10000
-    disksize: 80G
-    vmid: 223
-    os: ubuntu-noble-template
-    boot: started
+#  worker4:
+#    name: k3s-worker-4
+#    node: home1
+#    type: worker
+#    ip: 192.168.50.156
+#    macaddr: 7A:00:00:00:01:13
+#    cores: 4
+#    ram: 10000
+#    disksize: 80G
+#    vmid: 223
+#    os: ubuntu-noble-template
+#    boot: started
   worker5:
     name: k3s-worker-5
     node: home2
