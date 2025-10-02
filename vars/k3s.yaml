@@ -1,0 +1,2 @@
+install_k3s_exec: "--disable servicelb --disable traefik"
+

@@ -1,0 +1,83 @@
+---
+#####################
+# Import External Ceph Cluster Configuration
+#####################
+- name: Import External Ceph Cluster Configuration
+  hosts: primary
+  become: true
+  become_method: sudo
+  gather_facts: false
+  vars_files:
+    - vars/nodes.yaml
+
+  tasks:
+    - name: Create temporary directory for Ceph import scripts
+      file:
+        path: /tmp/ceph-import
+        state: directory
+        mode: '0755'
+
+    - name: Copy Ceph environment variables script
+      copy:
+        src: proxmox-ceph/env.sh
+        dest: /tmp/ceph-import/env.sh
+        mode: '0644'
+
+    - name: Copy Ceph import script
+      copy:
+        src: proxmox-ceph/import-external-cluster.sh
+        dest: /tmp/ceph-import/import-external-cluster.sh
+        mode: '0755'
+
+    - name: Import Ceph cluster configuration
+      shell: |
+        set -e
+        # Source the environment variables
+        source /tmp/ceph-import/env.sh
+        # Execute the import script
+        /tmp/ceph-import/import-external-cluster.sh
+      args:
+        executable: /bin/bash
+      register: ceph_import_result
+
+    - name: Display import result
+      debug:
+        var: ceph_import_result.stdout_lines
+      when: ceph_import_result.stdout_lines is defined
+
+    - name: Check if StorageClasses were created successfully
+      shell: kubectl get storageclass
+      register: storageclass_list
+      changed_when: false
+
+    - name: Display available StorageClasses
+      debug:
+        msg: |
+          Ceph external cluster has been imported successfully!
+
+          Available StorageClasses:
+          {{ storageclass_list.stdout }}
+
+          The following resources have been created:
+          - Namespace: rook-ceph
+          - Secrets for Ceph monitors and CSI drivers
+          - StorageClass: ceph-rbd (for block storage)
+          - StorageClass: cephfs (for shared filesystem)
+
+          You can now use these StorageClasses in your PVC definitions.
+
+    - name: Verify Ceph secrets are created
+      shell: kubectl get secrets -n rook-ceph | grep -E '(rook-ceph-mon|csi-rbd|csi-cephfs)'
+      register: ceph_secrets
+      changed_when: false
+      failed_when: false
+
+    - name: Display Ceph secrets status
+      debug:
+        msg: "Ceph secrets created: {{ ceph_secrets.stdout_lines }}"
+      when: ceph_secrets.rc == 0
+
+    - name: Clean up temporary files
+      file:
+        path: /tmp/ceph-import
+        state: absent
