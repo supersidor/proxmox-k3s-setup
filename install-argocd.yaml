@@ -34,13 +34,13 @@
     - name: Apply ArgoCD configuration
       shell: kubectl apply -f /tmp/argocd-cmd-params-cm.yaml
 
-    - name: Copy ArgoCD ingress configuration to remote
-      copy:
-        src: manifests/argocd-server-ingress.yaml
-        dest: /tmp/argocd-server-ingress.yaml
-
-    - name: Apply ArgoCD ingress
-      shell: kubectl apply -f /tmp/argocd-server-ingress.yaml
+#    - name: Copy ArgoCD ingress configuration to remote
+#      copy:
+#        src: manifests/argocd-server-ingress.yaml
+#        dest: /tmp/argocd-server-ingress.yaml
+#
+#    - name: Apply ArgoCD ingress
+#      shell: kubectl apply -f /tmp/argocd-server-ingress.yaml
 
     - name: Restart ArgoCD server deployment
       shell: kubectl -n {{ argocd_namespace }} rollout restart deployment/argocd-server
