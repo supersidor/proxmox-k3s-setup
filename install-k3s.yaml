@@ -70,12 +70,6 @@
         state: directory
         mode: 0755
 
-    - name: Deploy registries.yaml configuration
-      copy:
-        src: files/registries.yaml
-        dest: /etc/rancher/k3s/registries.yaml
-        mode: 0644
-
     - name: install K3s master server
       shell: curl -sfL https://get.k3s.io | sh -s - server --cluster-init --node-taint CriticalAddonsOnly=true:NoExecute --tls-san {{ nodes.haproxy.ip }} --node-label "topology.kubernetes.io/zone={{ node }}" {{ install_k3s_exec }}
 
@@ -130,12 +124,6 @@
         state: directory
         mode: 0755
 
-    - name: Deploy registries.yaml configuration
-      copy:
-        src: files/registries.yaml
-        dest: /etc/rancher/k3s/registries.yaml
-        mode: 0644
-
     - name: Install K3s secondary control plane servers
       shell: curl -sfL https://get.k3s.io | sh -s - server  --server https://{{ nodes.haproxy.ip }}:6443 --token={{ token }} --node-taint CriticalAddonsOnly=true:NoExecute  --tls-san {{ nodes.haproxy.ip }} --node-label "topology.kubernetes.io/zone={{ node }}" {{ install_k3s_exec }}
 
@@ -173,12 +161,6 @@
         path: /etc/rancher/k3s
         state: directory
         mode: 0755
-
-    - name: Deploy registries.yaml configuration
-      copy:
-        src: files/registries.yaml
-        dest: /etc/rancher/k3s/registries.yaml
-        mode: 0644
 
     - name: Install K3s worker
       shell: curl -sfL https://get.k3s.io | K3S_URL=https://{{ nginx_ip}}:6443 K3S_TOKEN={{ token }} sh -s - --node-label "topology.kubernetes.io/zone={{ node }}"
