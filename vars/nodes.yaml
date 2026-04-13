@@ -9,7 +9,7 @@ nodes:
     ram: 4192
     disksize: 20G
     vmid: 200
-    os: ubuntu-noble-template
+    os: ubuntu-node-template
     boot: started
   master1:
     name: k3s-ctrl-1
@@ -21,7 +21,7 @@ nodes:
     ram: 4192
     disksize: 20G
     vmid: 210
-    os: ubuntu-noble-template
+    os: ubuntu-node-template
     boot: started
   master2:
     name: k3s-ctrl-2
@@ -33,7 +33,7 @@ nodes:
     ram: 4192
     disksize: 20G
     vmid: 211
-    os: ubuntu-noble-template
+    os: ubuntu-node-template
     boot: started
   master3:
     name: k3s-ctrl-3
@@ -45,7 +45,7 @@ nodes:
     ram: 4192
     disksize: 20G
     vmid: 212
-    os: ubuntu-noble-template
+    os: ubuntu-node-template
     boot: started
   worker1:
     name: k3s-worker-1
@@ -57,7 +57,7 @@ nodes:
     ram: 10000
     disksize: 80G
     vmid: 220
-    os: ubuntu-noble-template
+    os: ubuntu-node-template
     boot: started
   worker2:
     name: k3s-worker-2
@@ -69,7 +69,7 @@ nodes:
     ram: 10000
     disksize: 80G
     vmid: 221
-    os: ubuntu-noble-template
+    os: ubuntu-node-template
     boot: started
   worker3:
     name: k3s-worker-3
@@ -81,7 +81,7 @@ nodes:
     ram: 10000
     disksize: 80G
     vmid: 222
-    os: ubuntu-noble-template
+    os: ubuntu-node-template
     boot: started
 #  worker4:
 #    name: k3s-worker-4
@@ -93,7 +93,7 @@ nodes:
 #    ram: 10000
 #    disksize: 80G
 #    vmid: 223
-#    os: ubuntu-noble-template
+#    os: ubuntu-node-template
 #    boot: started
   worker5:
     name: k3s-worker-5
@@ -105,7 +105,7 @@ nodes:
     ram: 4096
     disksize: 40G
     vmid: 224
-    os: ubuntu-noble-template
+    os: ubuntu-node-template
     boot: started
   worker6:
     name: k3s-worker-6
@@ -117,7 +117,7 @@ nodes:
     ram: 8096
     disksize: 40G
     vmid: 225
-    os: ubuntu-noble-template
+    os: ubuntu-node-template
     boot: started
   worker7:
     name: k3s-worker-7
@@ -129,5 +129,5 @@ nodes:
     ram: 8096
     disksize: 40G
     vmid: 226
-    os: ubuntu-noble-template
+    os: ubuntu-node-template
     boot: started
