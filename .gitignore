@@ -30,6 +30,9 @@ __pycache__/
 # Ansible
 *.retry
 
+# Environment files with secrets
+.env
+
 # Logs
 *.log
 logs/

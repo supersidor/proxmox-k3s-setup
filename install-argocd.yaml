@@ -14,12 +14,13 @@
     argocd_namespace: argocd
     argocd_admin_password: admin
     argocd_manifests_url: "https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml"
+    pihole_password: "{{ lookup('community.general.dotenv', 'EXTERNAL_DNS_PIHOLE_PASSWORD', file='.env') }}"
 
   tasks:
     - name: Install ArgoCD
       shell: |
         kubectl create namespace {{ argocd_namespace }}
-        kubectl apply -n {{ argocd_namespace }} -f {{ argocd_manifests_url }}
+        kubectl apply --server-side -n {{ argocd_namespace }} -f {{ argocd_manifests_url }}
 
     - name: Wait for ArgoCD to be ready
       shell: kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=argocd-server -n {{ argocd_namespace }} --timeout=300s
@@ -67,6 +68,16 @@
     - name: Install root argocd application
       shell: |
         kubectl apply -f https://raw.githubusercontent.com/supersidor/argocd/main/root.yaml 
+
+    - name: Create external-dns namespace
+      shell: kubectl create namespace external-dns --dry-run=client -o yaml | kubectl apply -f -
+
+    - name: Create pihole-password secret for external-dns
+      shell: |
+        kubectl create secret generic pihole-password \
+          --namespace=external-dns \
+          --from-literal=EXTERNAL_DNS_PIHOLE_PASSWORD='{{ pihole_password }}' \
+          --dry-run=client -o yaml | kubectl apply -f -
 
     - name: Display ArgoCD access information
       debug:
