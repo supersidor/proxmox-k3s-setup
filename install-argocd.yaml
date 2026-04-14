@@ -14,7 +14,6 @@
     argocd_namespace: argocd
     argocd_admin_password: admin
     argocd_manifests_url: "https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml"
-    pihole_password: "{{ lookup('ansible.builtin.ini', 'EXTERNAL_DNS_PIHOLE_PASSWORD type=properties file=.env case_sensitive=True') }}"
     sealed_secrets_tls_crt_b64: "{{ lookup('ansible.builtin.ini', 'SEALED_SECRETS_TLS_CRT_B64 type=properties file=.env case_sensitive=True') }}"
     sealed_secrets_tls_key_b64: "{{ lookup('ansible.builtin.ini', 'SEALED_SECRETS_TLS_KEY_B64 type=properties file=.env case_sensitive=True') }}"
 
@@ -92,16 +91,6 @@
     - name: Install root argocd application
       shell: |
         kubectl apply -f https://raw.githubusercontent.com/supersidor/argocd/main/root.yaml
-
-    - name: Create external-dns namespace
-      shell: kubectl create namespace external-dns --dry-run=client -o yaml | kubectl apply -f -
-
-    - name: Create pihole-password secret for external-dns
-      shell: |
-        kubectl create secret generic pihole-password \
-          --namespace=external-dns \
-          --from-literal=EXTERNAL_DNS_PIHOLE_PASSWORD='{{ pihole_password }}' \
-          --dry-run=client -o yaml | kubectl apply -f -
 
     - name: Display ArgoCD access information
       debug:
