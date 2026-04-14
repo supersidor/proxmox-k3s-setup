@@ -9,6 +9,12 @@
   gather_facts: false
   vars_files:
     - vars/nodes.yaml
+  vars:
+    ceph_rook_external_user_secret: "{{ lookup('ansible.builtin.ini', 'CEPH_ROOK_EXTERNAL_USER_SECRET type=properties file=.env case_sensitive=True') }}"
+    ceph_csi_rbd_node_secret: "{{ lookup('ansible.builtin.ini', 'CEPH_CSI_RBD_NODE_SECRET type=properties file=.env case_sensitive=True') }}"
+    ceph_csi_rbd_provisioner_secret: "{{ lookup('ansible.builtin.ini', 'CEPH_CSI_RBD_PROVISIONER_SECRET type=properties file=.env case_sensitive=True') }}"
+    ceph_csi_cephfs_node_secret: "{{ lookup('ansible.builtin.ini', 'CEPH_CSI_CEPHFS_NODE_SECRET type=properties file=.env case_sensitive=True') }}"
+    ceph_csi_cephfs_provisioner_secret: "{{ lookup('ansible.builtin.ini', 'CEPH_CSI_CEPHFS_PROVISIONER_SECRET type=properties file=.env case_sensitive=True') }}"
 
   tasks:
     - name: Create temporary directory for Ceph import scripts
@@ -17,11 +23,12 @@
         state: directory
         mode: '0755'
 
-    - name: Copy Ceph environment variables script
-      copy:
-        src: proxmox-ceph/env.sh
+    - name: Render Ceph environment variables script from .env
+      template:
+        src: proxmox-ceph/env.sh.j2
         dest: /tmp/ceph-import/env.sh
-        mode: '0644'
+        mode: '0600'
+      no_log: true
 
     - name: Copy Ceph import script
       copy:
