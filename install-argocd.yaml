@@ -12,7 +12,7 @@
   vars:
     # ArgoCD configuration variables (can be overridden via -e)
     argocd_namespace: argocd
-    argocd_admin_password: admin
+    argocd_admin_password: "{{ lookup('ansible.builtin.ini', 'ARGOCD_ADMIN_PASSWORD type=properties file=.env case_sensitive=True') }}"
     argocd_manifests_url: "https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml"
     sealed_secrets_tls_crt_b64: "{{ lookup('ansible.builtin.ini', 'SEALED_SECRETS_TLS_CRT_B64 type=properties file=.env case_sensitive=True') }}"
     sealed_secrets_tls_key_b64: "{{ lookup('ansible.builtin.ini', 'SEALED_SECRETS_TLS_KEY_B64 type=properties file=.env case_sensitive=True') }}"
